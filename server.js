@@ -25,7 +25,7 @@ let isDocker = await new Promise(resolve =>
 );
 
 if (isDocker) {
-  options = {socket: {host: 'host.docker.internal' }};
+  options = {socket: {host: 'host.docker.internal', port: 6378 }};
 }
 const redisClient = createClient(options);
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
