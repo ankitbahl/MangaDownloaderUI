@@ -15,15 +15,19 @@ export default function useMangaList() {
     }
   }, [jobId]);
 
-  const mangaSearch = (searchTerm) => {
+  const mangaSearch = (searchTerm, onResults) => {
     axios.get(`/manga-search?searchTerm=${encodeURI(searchTerm)}`, {headers: {auth: getAuthCookie()}})
       .then(res => {
         if (res.data.length === 0) {
           alert('No results!');
         }
         setMangaList(res.data);
+        onResults();
       })
-      .catch(e => console.error(e));
+      .catch(e => {
+        console.error(e);
+        onResults();
+      });
   }
 
   const mangaStart = (url, startChapter, endChapter) => {
@@ -33,7 +37,7 @@ export default function useMangaList() {
         if (res.data.jobId) {
           setJobId(res.data.jobId);
           setJobProgress(0);
-          setJobStatus('downloading');
+          setJobStatus('server_downloading');
         }
         setLoading(false);
       })
@@ -62,7 +66,16 @@ export default function useMangaList() {
       console.error("no job id");
       return;
     }
-    axios.get(`/download-file?jobId=${jobId}`, {responseType: 'blob', headers: {auth: getAuthCookie()}})
+    setJobStatus('client_downloading')
+    axios.get(`/download-file?jobId=${jobId}`,
+      {
+        responseType: 'blob',
+        headers: {auth: getAuthCookie()},
+        onDownloadProgress: (progressEvent => {
+          const downloadPercent = Math.round(100 * progressEvent.loaded / progressEvent.total);
+          setJobProgress(downloadPercent);
+        })
+      })
       .then(res => {
         const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement('a');

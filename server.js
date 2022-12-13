@@ -62,7 +62,7 @@ app.get('/download-manga', async (req, res) => {
   try {
     await downloadManga(mangaUrl, startChapter, endChapter, `./out/${jobId}.pdf`, (line) => {
       if (line.includes('Download progress:')) {
-        jobStatus[jobId] = {status: 'downloading'}
+        jobStatus[jobId] = {status: 'server_downloading'}
       } else if (line.includes('Done downloading')) {
         jobStatus[jobId].status = 'compiling';
       } else if (line.includes('%')) {
@@ -78,7 +78,7 @@ app.get('/download-manga', async (req, res) => {
         };
       }
     });
-    jobStatus[jobId] = {status: 'downloading'};
+    jobStatus[jobId] = {status: 'server_downloading'};
     res.json({ jobId });
   } catch (e) {
     console.error(e);

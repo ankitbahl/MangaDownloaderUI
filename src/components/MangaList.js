@@ -1,7 +1,9 @@
 import useMangaList from "../hooks/useMangaList.js";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import styled from 'styled-components';
 import {Navigate} from "react-router-dom";
+import {FallingLines} from "react-loader-spinner";
+
 const List = styled.div`
   &> div:first-child {
     font-weight: bold;
@@ -56,6 +58,13 @@ const MangaList = () => {
          { mangaSearch, mangaStart, downloadFile }] = useMangaList();
   const [searchText, setSearchText] = useState('');
   const [startedJobIndex, setStartedJobIndex] = useState(-1);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    if (jobStatus === null) {
+      setStartedJobIndex(-1);
+    }
+  }, [jobStatus]);
 
   if (!localStorage.getItem('loginUser') || !localStorage.getItem('loginPass')) {
     return <Navigate to='/login-page' />;
@@ -64,12 +73,14 @@ const MangaList = () => {
   const downloadColumn = (index, title, url) => {
     if (loading && startedJobIndex === index) {
       return <div>Loading</div>;
-    } else if (jobStatus === 'downloading' && startedJobIndex === index) {
-      return <div>{`${jobProgress}% Downloaded`}</div>;
+    } else if (jobStatus === 'server_downloading' && startedJobIndex === index) {
+      return <div>{`${jobProgress}% Downloaded on Server`}</div>;
     } else if (jobStatus === 'compiling' && startedJobIndex === index) {
       return <div>Compiling</div>;
     } else if (jobStatus === 'done' && startedJobIndex === index) {
       return <div><button onClick={() => downloadClick(index, title)}>Download File</button></div>
+    } else if (jobStatus === 'client_downloading' && startedJobIndex === index) {
+      return <div>{`${jobProgress}% Downloaded on Client`}</div>;
     } else {
       return (<div><button disabled={startedJobIndex !== -1} onClick={() => startDownloadClick(index, url)}>Start Download</button></div>);
     }
@@ -85,14 +96,31 @@ const MangaList = () => {
     setStartedJobIndex(index);
   }
 
+  const checkEnterKeyClicked = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      search();
+    }
+  }
+
   const downloadClick = (index, title) => {
-    setStartedJobIndex(-1);
     downloadFile(`${title}.pdf`);
   }
 
+  const search = () => {
+    setSearchLoading(true);
+    mangaSearch(searchText, () => setSearchLoading(false));
+  }
+
   return (<div>
-    <input placeholder="Enter search term" onInput={e => setSearchText(e.target.value)}/>
-    <button onClick={() => mangaSearch(searchText)}>Get Manga List</button>
+    <input placeholder="Enter search term" onInput={e => setSearchText(e.target.value)} onKeyPress={checkEnterKeyClicked}/>
+    <button onClick={search}>Get Manga List</button>
+    <br />
+    {searchLoading ?
+      <FallingLines
+        color="#000000"
+        width="100"
+      /> :
       <List>
         <ListItem>
           <div>Title</div>
@@ -109,7 +137,8 @@ const MangaList = () => {
           </ListItem>);
         })}
       </List>
-    </div>);
+    }
+  </div>);
 }
 
 export default MangaList;
