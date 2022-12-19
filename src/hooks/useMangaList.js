@@ -11,7 +11,7 @@ export default function useMangaList() {
 
   useEffect(() => {
     if (jobId !== null) {
-      mangaProgress();
+      mangaProgress(0);
     }
   }, [jobId]);
 
@@ -47,7 +47,7 @@ export default function useMangaList() {
       });
   }
 
-  const mangaProgress = () => {
+  const mangaProgress = (retries) => {
     axios.get(`/download-progress?jobId=${jobId}`, {headers: {auth: getAuthCookie()}})
       .then(res => {
         setJobStatus(res.data.status);
@@ -55,7 +55,15 @@ export default function useMangaList() {
           setJobProgress(res.data.progress);
         }
         if (res.data.status !== 'done') {
-          setTimeout(mangaProgress, 100);
+          setTimeout(() => mangaProgress(retries), 100);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+        if (retries > 10) {
+          console.error("Too many retries, failed");
+        } else {
+          setTimeout(() => mangaProgress(retries + 1), 100);
         }
       })
   }
